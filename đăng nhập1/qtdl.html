@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CineVault — Quản Trị Dữ Liệu (QTDL)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080d;
+  --panel:#111420;
+  --panel-2:#171b2b;
+  --line:#ffffff1a;
+  --ink:#f4f6fb;
+  --muted:#9aa3b8;
+  --accent:#6366f1;
+  --accent-2:#8b5cf6;
+  --ok:#34d399;
+  --err:#f87171;
+  --gold:#fbbf24;
+  --sans:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{min-height:100%}
+body{
+  background:radial-gradient(circle at 20% 0%,#1a1f38,var(--bg) 62%) fixed;
+  color:var(--ink);
+  font-family:var(--sans);
+  padding:20px;
+  padding-bottom:calc(32px + env(safe-area-inset-bottom,0px));
+}
+.wrap{max-width:1140px;margin:0 auto}
+header{
+  display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;
+  margin-bottom:20px;padding:16px 20px;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+}
+.brand h1{font-size:1.3rem;font-weight:700}
+.brand p{color:var(--muted);font-size:.84rem;margin-top:2px}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
+  background:#ffffff0d;border:1px solid var(--line);font-size:.8rem;color:var(--muted);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.dot.err{background:var(--err)}
+
+.grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;
+  box-shadow:0 16px 40px #00000044;
+}
+.card h2{font-size:1.05rem;font-weight:600;margin-bottom:14px}
+
+.field{margin-bottom:13px}
+label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px}
+input,select,textarea{
+  width:100%;font:inherit;font-size:.92rem;color:var(--ink);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:11px;padding:10px 12px;
+}
+textarea{min-height:68px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #6366f133}
+
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;align-items:center;gap:8px;margin:6px 0 14px;font-size:.88rem;color:var(--ink);cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--accent)}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font:inherit;font-weight:600;font-size:.9rem;border:0;border-radius:11px;padding:11px 14px;
+  cursor:pointer;transition:opacity .15s,transform .12s;text-decoration:none;
+}
+.btn:hover{opacity:.92}
+.btn:active{transform:translateY(1px)}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
+.btn-ghost{background:#ffffff0d;color:var(--ink);border:1px solid var(--line)}
+.btn-sm{padding:7px 10px;font-size:.8rem;border-radius:9px}
+.btn-danger{background:#f8717122;color:var(--err);border:1px solid #f8717155}
+
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:.85rem;display:none}
+.msg.on{display:block}
+.msg.ok{background:#34d39922;border:1px solid #34d39955;color:var(--ok)}
+.msg.err{background:#f8717122;border:1px solid #f8717155;color:var(--err)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.toolbar input{flex:1;min-width:180px}
+.toolbar select{width:auto;min-width:140px}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:500;white-space:nowrap}
+.url-cell{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.star{cursor:pointer;color:var(--muted);background:none;border:0;font-size:1rem}
+.star.on{color:var(--gold)}
+.empty{text-align:center;color:var(--muted);padding:24px;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>CineVault — Trang QTDL</h1>
+      <p>Quản lý link phim trực tiếp vào <code>movies.db</code> qua API server</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div class="badge" id="server-badge">
+        <span class="dot" id="server-dot"></span>
+        <span id="server-status">Đang kết nối...</span>
+      </div>
+      <a href="/" class="btn btn-ghost btn-sm">Mở trang người xem</a>
+    </div>
+  </header>
+
+  <div class="grid">
+    <aside class="card">
+      <h2 id="form-title">Thêm link phim mới</h2>
+      <form id="movie-form">
+        <input type="hidden" id="m-id">
+        <div class="field">
+          <label for="m-title">Tên phim *</label>
+          <input type="text" id="m-title" placeholder="VD: Sintel" required>
+        </div>
+        <div class="field">
+          <label for="m-url">Link phim *</label>
+          <input type="url" id="m-url" placeholder="https://..." required>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="m-genre">Thể loại</label>
+            <select id="m-genre">
+              <option value="Hành động">Hành động</option>
+              <option value="Viễn tưởng">Viễn tưởng</option>
+              <option value="Hoạt hình">Hoạt hình</option>
+              <option value="Tình cảm">Tình cảm</option>
+              <option value="Kinh dị">Kinh dị</option>
+              <option value="Khác">Khác</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="m-year">Năm</label>
+            <input type="text" id="m-year" placeholder="2026">
+          </div>
+        </div>
+        <div class="field">
+          <label for="m-poster">Link ảnh bìa (tùy chọn)</label>
+          <input type="url" id="m-poster" placeholder="Để trống sẽ tự nhận">
+        </div>
+        <div class="field">
+          <label for="m-note">Ghi chú</label>
+          <textarea id="m-note" placeholder="Tập mấy, ghi chú nguồn..."></textarea>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="m-fav"> Đánh dấu yêu thích
+        </label>
+        <button class="btn btn-primary" type="submit" id="save-btn">Lưu vào server</button>
+        <button class="btn btn-ghost" type="button" id="cancel-btn" style="width:100%;margin-top:8px;display:none">Hủy sửa</button>
+        <div class="msg" id="form-msg"></div>
+      </form>
+    </aside>
+
+    <main class="card">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Tìm theo tên phim, link hoặc ghi chú...">
+        <select id="filter-genre">
+          <option value="">Tất cả thể loại</option>
+          <option value="Hành động">Hành động</option>
+          <option value="Viễn tưởng">Viễn tưởng</option>
+          <option value="Hoạt hình">Hoạt hình</option>
+          <option value="Tình cảm">Tình cảm</option>
+          <option value="Kinh dị">Kinh dị</option>
+          <option value="Khác">Khác</option>
+        </select>
+        <button type="button" class="btn btn-ghost btn-sm" id="export-btn">Xuất JSON</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>★</th>
+              <th>Tên phim</th>
+              <th>Thể loại / Năm</th>
+              <th>Link</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let movies = [];
+
+function setBadge(ok, text){
+  $('server-dot').className = 'dot' + (ok ? '' : ' err');
+  $('server-status').textContent = text;
+}
+
+function showMsg(text, ok){
+  const el = $('form-msg');
+  el.textContent = text;
+  el.className = 'msg on ' + (ok ? 'ok' : 'err');
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadMovies(){
+  try {
+    const res = await fetch('/api/movies', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    movies = Array.isArray(data.movies) ? data.movies : [];
+    setBadge(true, `Server OK • ${movies.length} phim`);
+    renderTable();
+  } catch {
+    setBadge(false, 'Mất kết nối /api/movies');
+    $('tbody').innerHTML = '<tr><td colspan="5" class="empty">Hãy chạy <code>python server-v2.py</code> rồi mở qua <code>http://localhost:8000/qtdl.html</code></td></tr>';
+  }
+}
+
+function renderTable(){
+  const q = $('search').value.trim().toLowerCase();
+  const g = $('filter-genre').value;
+
+  const filtered = movies.filter(m => {
+    if (g && m.genre !== g) return false;
+    if (q && !m.title.toLowerCase().includes(q) && !m.url.toLowerCase().includes(q) && !(m.note || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const tb = $('tbody');
+  tb.innerHTML = '';
+  if (!filtered.length){
+    tb.innerHTML = '<tr><td colspan="5" class="empty">Chưa có phim nào trong <code>movies.db</code>.</td></tr>';
+    return;
+  }
+
+  filtered.forEach(m => {
+    const tr = document.createElement('tr');
+
+    const tdStar = document.createElement('td');
+    const star = document.createElement('button');
+    star.type = 'button';
+    star.className = 'star' + (m.fav ? ' on' : '');
+    star.textContent = '★';
+    star.onclick = async () => {
+      await saveMovie({ ...m, fav: !m.fav });
+    };
+    tdStar.appendChild(star);
+
+    const tdName = document.createElement('td');
+    tdName.innerHTML = `<strong>${escapeHtml(m.title)}</strong>${m.note ? `<div style="color:var(--muted);font-size:.78rem;margin-top:2px">${escapeHtml(m.note)}</div>` : ''}`;
+
+    const tdMeta = document.createElement('td');
+    tdMeta.innerHTML = `${escapeHtml(m.genre || 'Khác')}<div style="color:var(--muted);font-size:.78rem">${escapeHtml(m.year || '-')}</div>`;
+
+    const tdUrl = document.createElement('td');
+    tdUrl.className = 'url-cell';
+    tdUrl.title = m.url;
+    tdUrl.textContent = m.url;
+
+    const tdAct = document.createElement('td');
+    const act = document.createElement('div');
+    act.className = 'actions';
+
+    const btnEdit = document.createElement('button');
+    btnEdit.type = 'button';
+    btnEdit.className = 'btn btn-ghost btn-sm';
+    btnEdit.textContent = 'Sửa';
+    btnEdit.onclick = () => fillForm(m);
+
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn btn-danger btn-sm';
+    btnDel.textContent = 'Xóa';
+    btnDel.onclick = async () => {
+      if (!confirm(`Xóa "${m.title}" khỏi movies.db?`)) return;
+      await fetch('/api/movies/' + encodeURIComponent(m.id), { method: 'DELETE' });
+      await loadMovies();
+    };
+
+    act.append(btnEdit, btnDel);
+    tdAct.appendChild(act);
+
+    tr.append(tdStar, tdName, tdMeta, tdUrl, tdAct);
+    tb.appendChild(tr);
+  });
+}
+
+function fillForm(m){
+  $('form-title').textContent = 'Sửa link phim';
+  $('m-id').value = m.id;
+  $('m-title').value = m.title;
+  $('m-url').value = m.url;
+  $('m-genre').value = m.genre || 'Khác';
+  $('m-year').value = m.year || '';
+  $('m-poster').value = m.poster || '';
+  $('m-note').value = m.note || '';
+  $('m-fav').checked = !!m.fav;
+  $('cancel-btn').style.display = 'block';
+  $('m-title').focus();
+}
+
+function resetForm(){
+  $('form-title').textContent = 'Thêm link phim mới';
+  $('movie-form').reset();
+  $('m-id').value = '';
+  $('cancel-btn').style.display = 'none';
+}
+
+async function saveMovie(payload){
+  const res = await fetch('/api/movies', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('Lưu thất bại');
+  await loadMovies();
+}
+
+$('movie-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const payload = {
+    id: $('m-id').value || undefined,
+    title: $('m-title').value.trim(),
+    url: $('m-url').value.trim(),
+    genre: $('m-genre').value,
+    year: $('m-year').value.trim(),
+    poster: $('m-poster').value.trim(),
+    note: $('m-note').value.trim(),
+    fav: $('m-fav').checked
+  };
+  try {
+    await saveMovie(payload);
+    showMsg('Đã lưu vào movies.db trên server.', true);
+    resetForm();
+  } catch {
+    showMsg('Không lưu được lên server.', false);
+  }
+});
+
+$('export-btn').onclick = () => {
+  const blob = new Blob([JSON.stringify({ movies }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'movies-backup.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+$('cancel-btn').onclick = resetForm;
+$('search').oninput = renderTable;
+$('filter-genre').onchange = renderTable;
+
+loadMovies();
+</script>
+</body>
+</html>
